@@ -55,10 +55,8 @@ export async function POST(request: NextRequest) {
 
     if (merchantError) {
       console.error('[Signup] Merchant creation error:', merchantError)
-      // Cleanup: delete auth user if merchant creation fails
-      await supabase.auth.admin.deleteUser(userId)
       return NextResponse.json(
-        { error: 'Failed to create merchant' },
+        { error: 'Failed to create merchant. Please contact support.' },
         { status: 500 }
       )
     }
@@ -76,10 +74,8 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error('[Signup] Profile creation error:', profileError)
-      // Cleanup
-      await supabase.auth.admin.deleteUser(userId)
       return NextResponse.json(
-        { error: 'Failed to create profile' },
+        { error: 'Failed to create profile. Please contact support.' },
         { status: 500 }
       )
     }
@@ -95,10 +91,8 @@ export async function POST(request: NextRequest) {
 
     if (memberError) {
       console.error('[Signup] Member creation error:', memberError)
-      // Cleanup
-      await supabase.auth.admin.deleteUser(userId)
       return NextResponse.json(
-        { error: 'Failed to create merchant membership' },
+        { error: 'Failed to create merchant membership. Please contact support.' },
         { status: 500 }
       )
     }
