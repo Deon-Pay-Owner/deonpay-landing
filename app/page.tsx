@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/Button'
 import { Card } from '@/components/Card'
-import LandingHeader from '@/components/LandingHeader'
+import ClientLandingHeader from '@/components/ClientLandingHeader'
 import { CreditCard, Shield, Zap, TrendingUp, CheckCircle } from 'lucide-react'
 
 export default function HomePage() {
@@ -40,7 +40,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--color-background)]">
       {/* Header */}
-      <LandingHeader />
+      <ClientLandingHeader />
 
       {/* Hero Section */}
       <section className="py-20 px-6">
