@@ -25,6 +25,17 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       console.error('[Signup] Auth error:', authError)
+
+      // Check for duplicate email - provide friendly message
+      if (authError.message?.includes('already registered') ||
+          authError.message?.includes('User already registered') ||
+          authError.message?.toLowerCase().includes('already exists')) {
+        return NextResponse.json(
+          { error: 'Este correo ya está registrado. Por favor inicia sesión o usa otro correo.' },
+          { status: 400 }
+        )
+      }
+
       return NextResponse.json(
         { error: authError.message },
         { status: 400 }
