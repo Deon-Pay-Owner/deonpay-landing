@@ -5,9 +5,11 @@ import { signUpSchema } from '@/lib/schemas/signup'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('[Signup] Received data:', JSON.stringify(body, null, 2))
 
     // Validate input
     const validatedData = signUpSchema.parse(body)
+    console.log('[Signup] Validation passed')
 
     // Create Supabase client
     const supabase = await createClient()
@@ -125,8 +127,13 @@ export async function POST(request: NextRequest) {
 
     if (error.errors) {
       // Zod validation error
+      console.error('[Signup] Validation errors:', JSON.stringify(error.errors, null, 2))
       return NextResponse.json(
-        { error: error.errors[0].message },
+        {
+          error: error.errors[0].message,
+          field: error.errors[0].path?.join('.'),
+          details: error.errors
+        },
         { status: 400 }
       )
     }
