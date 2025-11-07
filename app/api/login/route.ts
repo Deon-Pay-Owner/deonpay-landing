@@ -63,19 +63,24 @@ export async function POST(request: NextRequest) {
     // Check if user has a profile
     const { data: profile, error: profileError } = await supabase
       .from('users_profile')
-      .select('default_merchant_id')
+      .select('default_merchant_id, full_name, phone, profile_type')
       .eq('user_id', userId)
       .single()
 
     let merchantId: string
 
     if (profileError || !profile || !profile.default_merchant_id) {
-      // Create default merchant for user
+      // Legacy user: Create default merchant with proper defaults
       const { data: newMerchant, error: merchantError } = await supabase
         .from('merchants')
         .insert({
           owner_user_id: userId,
-          name: `Merchant ${data.email}`,
+          name: 'Mi primer comercio',
+          country: 'MX',
+          currency: 'MXN',
+          channel: 'CARD_NOT_PRESENT',
+          status: 'draft',
+          onboarding_stage: 'initial',
         })
         .select('id')
         .single()
@@ -89,11 +94,14 @@ export async function POST(request: NextRequest) {
 
       merchantId = newMerchant.id
 
-      // Create or update user profile
+      // Create user profile with minimal data for legacy users
       const { error: upsertError } = await supabase
         .from('users_profile')
         .upsert({
           user_id: userId,
+          full_name: data.email.split('@')[0], // Use email prefix as placeholder
+          phone: '', // Empty for legacy users
+          profile_type: 'merchant_owner',
           default_merchant_id: merchantId,
         })
 
@@ -103,6 +111,15 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         )
       }
+
+      // Create merchant member relationship
+      await supabase
+        .from('merchant_members')
+        .insert({
+          merchant_id: merchantId,
+          user_id: userId,
+          role: 'owner',
+        })
     } else {
       merchantId = profile.default_merchant_id
     }

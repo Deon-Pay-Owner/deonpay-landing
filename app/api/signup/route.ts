@@ -1,0 +1,145 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase'
+import { signUpSchema } from '@/lib/schemas/signup'
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+
+    // Validate input
+    const validatedData = signUpSchema.parse(body)
+
+    // Create Supabase client
+    const supabase = await createClient()
+
+    // 1. Sign up user with Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: validatedData.email,
+      password: validatedData.password,
+      options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_LANDING_URL || 'https://deonpay.mx'}/signin`,
+      },
+    })
+
+    if (authError) {
+      console.error('[Signup] Auth error:', authError)
+      return NextResponse.json(
+        { error: authError.message },
+        { status: 400 }
+      )
+    }
+
+    if (!authData.user) {
+      return NextResponse.json(
+        { error: 'Failed to create user' },
+        { status: 500 }
+      )
+    }
+
+    const userId = authData.user.id
+
+    // 2. Create merchant record
+    const { data: merchant, error: merchantError } = await supabase
+      .from('merchants')
+      .insert({
+        owner_user_id: userId,
+        name: validatedData.merchant_name,
+        country: 'MX',
+        currency: 'MXN',
+        channel: 'CARD_NOT_PRESENT',
+        status: 'draft',
+        onboarding_stage: 'initial',
+      })
+      .select()
+      .single()
+
+    if (merchantError) {
+      console.error('[Signup] Merchant creation error:', merchantError)
+      // Cleanup: delete auth user if merchant creation fails
+      await supabase.auth.admin.deleteUser(userId)
+      return NextResponse.json(
+        { error: 'Failed to create merchant' },
+        { status: 500 }
+      )
+    }
+
+    // 3. Create user profile
+    const { error: profileError } = await supabase
+      .from('users_profile')
+      .insert({
+        user_id: userId,
+        full_name: validatedData.full_name,
+        phone: validatedData.phone,
+        profile_type: validatedData.profile_type,
+        default_merchant_id: merchant.id,
+      })
+
+    if (profileError) {
+      console.error('[Signup] Profile creation error:', profileError)
+      // Cleanup
+      await supabase.auth.admin.deleteUser(userId)
+      return NextResponse.json(
+        { error: 'Failed to create profile' },
+        { status: 500 }
+      )
+    }
+
+    // 4. Create merchant member relationship
+    const { error: memberError } = await supabase
+      .from('merchant_members')
+      .insert({
+        merchant_id: merchant.id,
+        user_id: userId,
+        role: 'owner',
+      })
+
+    if (memberError) {
+      console.error('[Signup] Member creation error:', memberError)
+      // Cleanup
+      await supabase.auth.admin.deleteUser(userId)
+      return NextResponse.json(
+        { error: 'Failed to create merchant membership' },
+        { status: 500 }
+      )
+    }
+
+    // 5. Check if email confirmation is required
+    if (authData.session) {
+      // User is already logged in (email confirmation disabled)
+      return NextResponse.json({
+        ok: true,
+        redirectTo: `${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.deonpay.mx'}/${merchant.id}`,
+        user: {
+          id: userId,
+          email: validatedData.email,
+        },
+        merchant: {
+          id: merchant.id,
+          name: merchant.name,
+        },
+      }, { status: 201 })
+    } else {
+      // Email confirmation required
+      return NextResponse.json({
+        ok: true,
+        pendingVerification: true,
+        message: 'Please check your email to verify your account',
+      }, { status: 201 })
+    }
+  } catch (error: any) {
+    console.error('[Signup] Unexpected error:', error)
+
+    if (error.errors) {
+      // Zod validation error
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: error.message || 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

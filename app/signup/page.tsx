@@ -3,22 +3,19 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
-import { z } from 'zod'
-import { createClient } from '@/lib/supabase-client'
-
-const signUpSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirmPassword'],
-})
+import { signUpSchema, type SignUpFormData, PROFILE_TYPE_LABELS, type ProfileType } from '@/lib/schemas/signup'
 
 export default function SignUpPage() {
+  // Form state
+  const [profileType, setProfileType] = useState<ProfileType>('merchant_owner')
+  const [merchantName, setMerchantName] = useState('')
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+
+  // UI state
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
@@ -31,30 +28,45 @@ export default function SignUpPage() {
     setLoading(true)
 
     try {
-      // Validate inputs
-      const data = signUpSchema.parse({ email, password, confirmPassword })
+      // Validate confirm password matches
+      if (password !== confirmPassword) {
+        throw new Error('Las contraseñas no coinciden')
+      }
 
-      // Create Supabase client
-      const supabase = createClient()
-
-      // Sign up user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/signin`,
-        },
+      // Validate all fields with Zod
+      const validatedData: SignUpFormData = signUpSchema.parse({
+        profile_type: profileType,
+        merchant_name: merchantName,
+        full_name: fullName,
+        email,
+        phone,
+        password,
       })
 
-      if (signUpError) {
-        throw new Error(signUpError.message)
+      // Call signup API
+      const response = await fetch('/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(validatedData),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al crear la cuenta')
       }
 
-      if (signUpData.user) {
+      if (result.pendingVerification) {
         setSuccess(true)
+      } else if (result.redirectTo) {
+        // Redirect to dashboard immediately
+        window.location.href = result.redirectTo
       }
-    } catch (err) {
-      if (err instanceof z.ZodError) {
+    } catch (err: any) {
+      if (err.errors) {
+        // Zod validation error
         setError(err.errors[0].message)
       } else if (err instanceof Error) {
         setError(err.message)
@@ -74,7 +86,7 @@ export default function SignUpPage() {
             <Link href="/" className="text-2xl font-bold text-primary-600">
               DeonPay
             </Link>
-            <Link href="/" className="text-gray-600 hover:text-gray-900">
+            <Link href="/" className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]">
               Volver al inicio
             </Link>
           </nav>
@@ -101,7 +113,7 @@ export default function SignUpPage() {
               <h1 className="text-2xl font-bold mb-2">
                 ¡Cuenta creada exitosamente!
               </h1>
-              <p className="text-gray-600 mb-6">
+              <p className="text-[var(--color-textSecondary)] mb-6">
                 Hemos enviado un correo de verificación a <strong>{email}</strong>.
                 Por favor, revisa tu bandeja de entrada y haz clic en el enlace
                 para activar tu cuenta.
@@ -124,7 +136,7 @@ export default function SignUpPage() {
           <Link href="/" className="text-2xl font-bold text-primary-600">
             DeonPay
           </Link>
-          <Link href="/" className="text-gray-600 hover:text-gray-900">
+          <Link href="/" className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]">
             Volver al inicio
           </Link>
         </nav>
@@ -137,7 +149,7 @@ export default function SignUpPage() {
             <h1 className="text-3xl font-bold text-center mb-2">
               Crear cuenta
             </h1>
-            <p className="text-center text-gray-600 mb-8">
+            <p className="text-center text-[var(--color-textSecondary)] mb-8">
               Comienza a usar DeonPay hoy
             </p>
 
@@ -148,9 +160,70 @@ export default function SignUpPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Profile Type */}
+              <div>
+                <label className="label-field">¿Cuál es tu perfil?</label>
+                <div className="space-y-2">
+                  {(Object.entries(PROFILE_TYPE_LABELS) as [ProfileType, string][]).map(([value, label]) => (
+                    <label
+                      key={value}
+                      className="flex items-center gap-3 p-3 border border-[var(--color-border)] rounded-lg cursor-pointer hover:border-[var(--color-primary)] transition-colors"
+                    >
+                      <input
+                        type="radio"
+                        name="profile_type"
+                        value={value}
+                        checked={profileType === value}
+                        onChange={(e) => setProfileType(e.target.value as ProfileType)}
+                        disabled={loading}
+                        className="w-4 h-4 text-[var(--color-primary)]"
+                      />
+                      <span className="text-sm font-medium text-[var(--color-textPrimary)]">
+                        {label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Merchant Name */}
+              <div>
+                <label htmlFor="merchantName" className="label-field">
+                  Nombre del comercio o proyecto
+                </label>
+                <input
+                  id="merchantName"
+                  type="text"
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  className="input-field"
+                  placeholder="Mi Empresa S.A. de C.V."
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label htmlFor="fullName" className="label-field">
+                  Tu nombre completo
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="input-field"
+                  placeholder="Juan Pérez"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Email */}
               <div>
                 <label htmlFor="email" className="label-field">
-                  Email
+                  Correo electrónico
                 </label>
                 <input
                   id="email"
@@ -164,6 +237,24 @@ export default function SignUpPage() {
                 />
               </div>
 
+              {/* Phone */}
+              <div>
+                <label htmlFor="phone" className="label-field">
+                  Teléfono o WhatsApp
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="input-field"
+                  placeholder="+52 555 123 4567"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Password */}
               <div>
                 <label htmlFor="password" className="label-field">
                   Contraseña
@@ -197,6 +288,7 @@ export default function SignUpPage() {
                 </p>
               </div>
 
+              {/* Confirm Password */}
               <div>
                 <label htmlFor="confirmPassword" className="label-field">
                   Confirmar contraseña
@@ -237,7 +329,7 @@ export default function SignUpPage() {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-gray-600">
+              <p className="text-[var(--color-textSecondary)]">
                 ¿Ya tienes cuenta?{' '}
                 <Link
                   href="/signin"
