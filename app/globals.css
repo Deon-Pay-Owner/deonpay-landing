@@ -1,0 +1,209 @@
+/* DeonPay Design Tokens */
+:root[data-theme="light"] {
+  --color-primary: #005FFF;
+  --color-primaryHover: #0047D6;
+  --color-background: #FFFFFF;
+  --color-surface: #F8F9FB;
+  --color-textPrimary: #1B1B1F;
+  --color-textSecondary: #555B63;
+  --color-border: #E2E8F0;
+  --color-success: #22C55E;
+  --color-warning: #FACC15;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+}
+
+:root[data-theme="dark"] {
+  --color-primary: #3B82F6;
+  --color-primaryHover: #2563EB;
+  --color-background: #0E0E0F;
+  --color-surface: #1C1C1E;
+  --color-textPrimary: #FFFFFF;
+  --color-textSecondary: #A0A0A5;
+  --color-border: #2E2E33;
+  --color-success: #22C55E;
+  --color-warning: #FACC15;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+}
+
+:root {
+  --color-primary: #005FFF;
+  --color-primaryHover: #0047D6;
+  --color-background: #FFFFFF;
+  --color-surface: #F8F9FB;
+  --color-textPrimary: #1B1B1F;
+  --color-textSecondary: #555B63;
+  --color-border: #E2E8F0;
+  --color-success: #22C55E;
+  --color-warning: #FACC15;
+  --color-danger: #EF4444;
+  --color-info: #3B82F6;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 10px rgba(0,0,0,0.1);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
+  --shadow-xl: 0 20px 40px rgba(0,0,0,0.3);
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4rem;
+
+  --font-heading: Poppins, system-ui, sans-serif;
+  --font-body: Inter, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--color-background);
+  color: var(--color-textPrimary);
+}
+
+/* Utility Classes for Forms and Buttons - Mobile First */
+.container-safe {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-safe {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-safe {
+    padding: 0 2rem;
+  }
+}
+
+/* Form Fields - Responsive */
+.label-field {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-textPrimary);
+  margin-bottom: 0.5rem;
+}
+
+.input-field {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-textPrimary);
+  background-color: var(--color-background);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 95, 255, 0.1);
+}
+
+.input-field:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: var(--color-surface);
+}
+
+.input-field::placeholder {
+  color: var(--color-textSecondary);
+  opacity: 0.6;
+}
+
+/* Buttons - Mobile Optimized */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #FFFFFF;
+  background-color: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 44px; /* iOS accessibility */
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primaryHover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Larger buttons on mobile for better touch */
+@media (max-width: 640px) {
+  .btn-primary {
+    padding: 1rem 1.5rem;
+    font-size: 1.0625rem;
+    min-height: 48px;
+  }
+}
+
+/* Error Messages */
+.error-message {
+  font-size: 0.875rem;
+  color: var(--color-danger);
+  line-height: 1.4;
+}
+
+/* Color Utilities - Using CSS Variables */
+.text-primary-600 {
+  color: var(--color-primary);
+}
+
+.text-primary-700 {
+  color: var(--color-primaryHover);
+}
+
+.hover\:text-primary-700:hover {
+  color: var(--color-primaryHover);
+}
