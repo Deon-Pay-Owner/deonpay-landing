@@ -61,14 +61,14 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col">
       {/* Header */}
-      <header className="container-safe py-6">
+      <header className="container-safe py-6 border-b border-gray-200 dark:border-gray-700">
         <nav className="flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-primary-600">
+          <Link href="/" className="text-2xl font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
             DeonPay
           </Link>
-          <Link href="/" className="text-gray-600 hover:text-gray-900">
+          <Link href="/" className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             Volver al inicio
           </Link>
         </nav>
@@ -77,11 +77,11 @@ export default function SignInPage() {
       {/* Sign In Form */}
       <main className="flex-1 flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <h1 className="text-3xl font-bold text-center mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+            <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
               Iniciar sesión
             </h1>
-            <p className="text-center text-gray-600 mb-8">
+            <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
               Accede a tu cuenta de DeonPay
             </p>
 
@@ -148,11 +148,11 @@ export default function SignInPage() {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-gray-600">
+              <p className="text-gray-600 dark:text-gray-400">
                 ¿No tienes cuenta?{' '}
                 <Link
                   href="/signup"
-                  className="text-primary-600 hover:text-primary-700 font-semibold"
+                  className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold"
                 >
                   Crear cuenta
                 </Link>

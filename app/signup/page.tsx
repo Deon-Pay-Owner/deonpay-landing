@@ -81,13 +81,13 @@ export default function SignUpPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-        <header className="container-safe py-6">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col">
+        <header className="container-safe py-6 border-b border-gray-200 dark:border-gray-700">
           <nav className="flex justify-between items-center">
-            <Link href="/" className="text-2xl font-bold text-primary-600">
+            <Link href="/" className="text-2xl font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
               DeonPay
             </Link>
-            <Link href="/" className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]">
+            <Link href="/" className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
               Volver al inicio
             </Link>
           </nav>
@@ -95,7 +95,7 @@ export default function SignUpPage() {
 
         <main className="flex-1 flex items-center justify-center py-12 px-4">
           <div className="w-full max-w-md">
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center border border-gray-200 dark:border-gray-700">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
                   className="w-8 h-8 text-green-600"
@@ -111,11 +111,11 @@ export default function SignUpPage() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold mb-2">
+              <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
                 ¡Cuenta creada exitosamente!
               </h1>
-              <p className="text-[var(--color-textSecondary)] mb-6">
-                Hemos enviado un correo de verificación a <strong>{email}</strong>.
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Hemos enviado un correo de verificación a <strong className="text-gray-900 dark:text-white">{email}</strong>.
                 Por favor, revisa tu bandeja de entrada y haz clic en el enlace
                 para activar tu cuenta.
               </p>
@@ -130,14 +130,14 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col">
       {/* Header */}
-      <header className="container-safe py-6">
+      <header className="container-safe py-6 border-b border-gray-200 dark:border-gray-700">
         <nav className="flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-primary-600">
+          <Link href="/" className="text-2xl font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
             DeonPay
           </Link>
-          <Link href="/" className="text-[var(--color-textSecondary)] hover:text-[var(--color-textPrimary)]">
+          <Link href="/" className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
             Volver al inicio
           </Link>
         </nav>
@@ -146,11 +146,11 @@ export default function SignUpPage() {
       {/* Sign Up Form */}
       <main className="flex-1 flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <h1 className="text-3xl font-bold text-center mb-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+            <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
               Crear cuenta
             </h1>
-            <p className="text-center text-[var(--color-textSecondary)] mb-8">
+            <p className="text-center text-gray-600 dark:text-gray-400 mb-8">
               Comienza a usar DeonPay hoy
             </p>
 
@@ -325,11 +325,11 @@ export default function SignUpPage() {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-[var(--color-textSecondary)]">
+              <p className="text-gray-600 dark:text-gray-400">
                 ¿Ya tienes cuenta?{' '}
                 <Link
                   href="/signin"
-                  className="text-primary-600 hover:text-primary-700 font-semibold"
+                  className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold"
                 >
                   Iniciar sesión
                 </Link>
