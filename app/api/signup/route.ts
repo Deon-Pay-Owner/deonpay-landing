@@ -55,41 +55,99 @@ export async function POST(request: NextRequest) {
     const userId = authData.user.id
     console.log('[Signup] User created, ID:', userId)
 
-    // 2. Create merchant record
-    console.log('[Signup] Creating merchant for user:', userId)
-    const { data: merchant, error: merchantError } = await supabase
-      .from('merchants')
-      .insert({
-        owner_user_id: userId,
-        name: validatedData.merchant_name,
-        country: 'MX',
-        currency: 'MXN',
-        channel: 'CARD_NOT_PRESENT',
-        status: 'draft',
-        onboarding_stage: 'initial',
-      })
-      .select()
+    // Check if user already has complete setup (from a previous partial signup)
+    const { data: existingProfile } = await supabase
+      .from('users_profile')
+      .select('*, merchants!users_profile_default_merchant_id_fkey(id, name)')
+      .eq('user_id', userId)
       .single()
 
-    if (merchantError) {
-      console.error('[Signup] Merchant creation error:', {
-        message: merchantError.message,
-        details: merchantError.details,
-        hint: merchantError.hint,
-        code: merchantError.code,
-      })
-      return NextResponse.json(
-        {
-          error: 'Failed to create merchant. Please contact support.',
-          debug: `${merchantError.message} (${merchantError.code})`
-        },
-        { status: 500 }
-      )
+    if (existingProfile && existingProfile.merchants) {
+      console.log('[Signup] User already has complete profile, returning existing merchant')
+
+      // User already has everything set up, just return their data
+      if (authData.session) {
+        return NextResponse.json({
+          ok: true,
+          redirectTo: `${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.deonpay.mx'}/${existingProfile.default_merchant_id}`,
+          user: {
+            id: userId,
+            email: validatedData.email,
+          },
+          merchant: {
+            id: existingProfile.default_merchant_id,
+            name: existingProfile.merchants.name,
+          },
+        }, { status: 200 })
+      } else {
+        return NextResponse.json({
+          ok: true,
+          pendingVerification: true,
+          message: 'Please check your email to verify your account',
+        }, { status: 200 })
+      }
     }
 
-    console.log('[Signup] Merchant created:', merchant.id)
+    // 2. Create or get merchant record
+    console.log('[Signup] Creating merchant for user:', userId)
 
-    // 3. Create user profile
+    // First, check if merchant already exists
+    let { data: merchant, error: merchantSelectError } = await supabase
+      .from('merchants')
+      .select()
+      .eq('owner_user_id', userId)
+      .single()
+
+    if (merchantSelectError && merchantSelectError.code !== 'PGRST116') {
+      // PGRST116 = no rows returned, which is expected for new users
+      console.error('[Signup] Error checking existing merchant:', merchantSelectError)
+    }
+
+    if (!merchant) {
+      // Merchant doesn't exist, create it
+      const { data: newMerchant, error: merchantError } = await supabase
+        .from('merchants')
+        .insert({
+          owner_user_id: userId,
+          name: validatedData.merchant_name,
+          country: 'MX',
+          currency: 'MXN',
+          channel: 'CARD_NOT_PRESENT',
+          status: 'draft',
+          onboarding_stage: 'initial',
+        })
+        .select()
+        .single()
+
+      if (merchantError) {
+        console.error('[Signup] Merchant creation error:', {
+          message: merchantError.message,
+          details: merchantError.details,
+          hint: merchantError.hint,
+          code: merchantError.code,
+        })
+
+        // If user was created but merchant failed, try to clean up
+        await supabase.auth.admin.deleteUser(userId).catch(err =>
+          console.error('[Signup] Failed to cleanup user after merchant error:', err)
+        )
+
+        return NextResponse.json(
+          {
+            error: 'Failed to create merchant. Please contact support.',
+            debug: `${merchantError.message} (${merchantError.code})`
+          },
+          { status: 500 }
+        )
+      }
+
+      merchant = newMerchant
+      console.log('[Signup] Merchant created:', merchant.id)
+    } else {
+      console.log('[Signup] Using existing merchant:', merchant.id)
+    }
+
+    // 3. Create or update user profile
     console.log('[Signup] Creating profile for user:', userId)
     console.log('[Signup] Profile data:', {
       user_id: userId,
@@ -99,14 +157,17 @@ export async function POST(request: NextRequest) {
       default_merchant_id: merchant.id,
     })
 
+    // Use upsert to handle existing profiles
     const { error: profileError } = await supabase
       .from('users_profile')
-      .insert({
+      .upsert({
         user_id: userId,
         full_name: validatedData.full_name,
         phone: validatedData.phone,
         profile_type: validatedData.profile_type,
         default_merchant_id: merchant.id,
+      }, {
+        onConflict: 'user_id'
       })
 
     if (profileError) {
@@ -116,6 +177,15 @@ export async function POST(request: NextRequest) {
         hint: profileError.hint,
         code: profileError.code,
       })
+
+      // Try to cleanup merchant and user
+      await supabase.from('merchants').delete().eq('id', merchant.id).catch(err =>
+        console.error('[Signup] Failed to cleanup merchant after profile error:', err)
+      )
+      await supabase.auth.admin.deleteUser(userId).catch(err =>
+        console.error('[Signup] Failed to cleanup user after profile error:', err)
+      )
+
       return NextResponse.json(
         {
           error: 'Failed to create profile. Please contact support.',
@@ -127,21 +197,39 @@ export async function POST(request: NextRequest) {
 
     console.log('[Signup] Profile created successfully')
 
-    // 4. Create merchant member relationship
-    const { error: memberError } = await supabase
+    // 4. Create merchant member relationship (with duplicate handling)
+    const { data: existingMember } = await supabase
       .from('merchant_members')
-      .insert({
-        merchant_id: merchant.id,
-        user_id: userId,
-        role: 'owner',
-      })
+      .select()
+      .eq('merchant_id', merchant.id)
+      .eq('user_id', userId)
+      .single()
 
-    if (memberError) {
-      console.error('[Signup] Member creation error:', memberError)
-      return NextResponse.json(
-        { error: 'Failed to create merchant membership. Please contact support.' },
-        { status: 500 }
-      )
+    if (!existingMember) {
+      const { error: memberError } = await supabase
+        .from('merchant_members')
+        .insert({
+          merchant_id: merchant.id,
+          user_id: userId,
+          role: 'owner',
+        })
+
+      if (memberError) {
+        console.error('[Signup] Member creation error:', memberError)
+        // Don't fail the entire signup if member relationship already exists
+        if (memberError.code !== '23505') { // 23505 = unique violation
+          return NextResponse.json(
+            { error: 'Failed to create merchant membership. Please contact support.' },
+            { status: 500 }
+          )
+        } else {
+          console.log('[Signup] Member relationship already exists, continuing')
+        }
+      } else {
+        console.log('[Signup] Merchant member relationship created')
+      }
+    } else {
+      console.log('[Signup] Merchant member relationship already exists')
     }
 
     // 5. Check if email confirmation is required
