@@ -18,38 +18,27 @@ export default function LandingHeader() {
 
     async function checkSession() {
       try {
-        console.log('[LandingHeader] Checking session...')
-        console.log('[LandingHeader] All cookies:', document.cookie)
-
         // Use getSession to check for active session with shared cookies
         const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-        console.log('[LandingHeader] Session result:', { session, sessionError })
-
         if (session?.user) {
-          console.log('[LandingHeader] User found:', session.user.id)
           setIsLoggedIn(true)
 
           // Get merchant ID
-          const { data: profile, error: profileError } = await supabase
+          const { data: profile } = await supabase
             .from('users_profile')
             .select('default_merchant_id')
             .eq('user_id', session.user.id)
             .single()
 
-          console.log('[LandingHeader] Profile result:', { profile, profileError })
-
           if (profile?.default_merchant_id) {
-            console.log('[LandingHeader] Merchant ID found:', profile.default_merchant_id)
             setMerchantId(profile.default_merchant_id)
           }
         } else {
-          console.log('[LandingHeader] No session found')
           setIsLoggedIn(false)
           setMerchantId(null)
         }
       } catch (error) {
-        console.error('[LandingHeader] Error checking session:', error)
         setIsLoggedIn(false)
         setMerchantId(null)
       } finally {
