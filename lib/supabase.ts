@@ -9,34 +9,61 @@ export type Database = {
           id: string
           owner_user_id: string
           name: string
+          status: string
+          onboarding_stage: string
+          country: string
+          currency: string
+          channel: string
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           owner_user_id: string
           name: string
+          status?: string
+          onboarding_stage?: string
+          country?: string
+          currency?: string
+          channel?: string
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
           owner_user_id?: string
           name?: string
+          status?: string
+          onboarding_stage?: string
+          country?: string
+          currency?: string
+          channel?: string
           created_at?: string
+          updated_at?: string
         }
       }
       users_profile: {
         Row: {
           user_id: string
+          full_name: string
+          phone: string
+          profile_type: string
           default_merchant_id: string | null
           created_at: string
         }
         Insert: {
           user_id: string
+          full_name: string
+          phone: string
+          profile_type: string
           default_merchant_id?: string | null
           created_at?: string
         }
         Update: {
           user_id?: string
+          full_name?: string
+          phone?: string
+          profile_type?: string
           default_merchant_id?: string | null
           created_at?: string
         }
