@@ -83,6 +83,14 @@ export function createBrowserClient() {
           // Try to read from document.cookie (works for non-httpOnly cookies)
           if (typeof document !== 'undefined') {
             const cookies = document.cookie.split(';')
+            // First try to read the client-accessible version
+            for (const cookie of cookies) {
+              const [key, value] = cookie.trim().split('=')
+              if (key === `${name}-client`) {
+                return decodeURIComponent(value)
+              }
+            }
+            // Fallback to original name
             for (const cookie of cookies) {
               const [key, value] = cookie.trim().split('=')
               if (key === name) {
