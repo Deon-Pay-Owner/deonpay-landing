@@ -50,8 +50,10 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = authData.user.id
+    console.log('[Signup] User created, ID:', userId)
 
     // 2. Create merchant record
+    console.log('[Signup] Creating merchant for user:', userId)
     const { data: merchant, error: merchantError } = await supabase
       .from('merchants')
       .insert({
@@ -67,12 +69,22 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (merchantError) {
-      console.error('[Signup] Merchant creation error:', merchantError)
+      console.error('[Signup] Merchant creation error:', {
+        message: merchantError.message,
+        details: merchantError.details,
+        hint: merchantError.hint,
+        code: merchantError.code,
+      })
       return NextResponse.json(
-        { error: 'Failed to create merchant. Please contact support.' },
+        {
+          error: 'Failed to create merchant. Please contact support.',
+          debug: `${merchantError.message} (${merchantError.code})`
+        },
         { status: 500 }
       )
     }
+
+    console.log('[Signup] Merchant created:', merchant.id)
 
     // 3. Create user profile
     const { error: profileError } = await supabase
