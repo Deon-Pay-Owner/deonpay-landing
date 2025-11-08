@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { signUpSchema } from '@/lib/schemas/signup'
+import { generateMerchantKeys } from '@/lib/api-keys'
 
 export async function POST(request: NextRequest) {
   console.log('[Signup] API Route called')
@@ -144,6 +145,52 @@ export async function POST(request: NextRequest) {
 
       merchant = newMerchant
       console.log('[Signup] Merchant created:', merchant.id)
+
+      // Generate API keys for the new merchant
+      console.log('[Signup] Generating API keys for merchant:', merchant.id)
+      const apiKeys = generateMerchantKeys('test')
+
+      const { error: apiKeysError } = await supabase
+        .from('api_keys')
+        .insert({
+          merchant_id: merchant.id,
+          name: 'Default Test Key',
+          key_type: 'test',
+          public_key: apiKeys.publicKey,
+          secret_key_hash: apiKeys.secretKeyHash,
+          secret_key_prefix: apiKeys.secretKeyPrefix,
+          is_active: true,
+          created_by: userId,
+        })
+
+      if (apiKeysError) {
+        console.error('[Signup] API keys creation error:', {
+          message: apiKeysError.message,
+          details: apiKeysError.details,
+          hint: apiKeysError.hint,
+          code: apiKeysError.code,
+        })
+
+        // Try to cleanup merchant (best effort)
+        supabase.from('merchants').delete().eq('id', merchant.id).then(
+          () => console.log('[Signup] Cleaned up merchant after API keys error'),
+          (err) => console.error('[Signup] Failed to cleanup merchant after API keys error:', err)
+        )
+        supabase.auth.admin.deleteUser(userId).then(
+          () => console.log('[Signup] Cleaned up user after API keys error'),
+          (err) => console.error('[Signup] Failed to cleanup user after API keys error:', err)
+        )
+
+        return NextResponse.json(
+          {
+            error: 'Failed to create API keys. Please contact support.',
+            debug: `${apiKeysError.message} (${apiKeysError.code})`
+          },
+          { status: 500 }
+        )
+      }
+
+      console.log('[Signup] API keys created successfully')
     } else {
       console.log('[Signup] Using existing merchant:', merchant.id)
     }
