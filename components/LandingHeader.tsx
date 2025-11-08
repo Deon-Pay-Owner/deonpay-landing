@@ -78,7 +78,7 @@ export default function LandingHeader() {
                   </Link>
                 ) : (
                   <>
-                    <Link href="/signin" className="hidden sm:block">
+                    <Link href="/signin">
                       <Button variant="ghost">Iniciar Sesión</Button>
                     </Link>
                     <Link href="/signup">
