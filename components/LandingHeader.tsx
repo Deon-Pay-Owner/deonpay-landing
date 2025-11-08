@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from './Button'
 import { CreditCard, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { createClient } from '@/lib/supabase'
+import { createBrowserClient } from '@/lib/supabase'
 
 export default function LandingHeader() {
   const { theme, toggleTheme } = useTheme()
@@ -16,7 +16,7 @@ export default function LandingHeader() {
   useEffect(() => {
     async function checkSession() {
       try {
-        const supabase = await createClient()
+        const supabase = createBrowserClient()
         const { data: { user } } = await supabase.auth.getUser()
 
         if (user) {
