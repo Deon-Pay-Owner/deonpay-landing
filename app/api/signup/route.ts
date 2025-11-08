@@ -3,7 +3,10 @@ import { createClient } from '@/lib/supabase'
 import { signUpSchema } from '@/lib/schemas/signup'
 
 export async function POST(request: NextRequest) {
+  console.log('[Signup] API Route called')
+
   try {
+    console.log('[Signup] Parsing request body')
     const body = await request.json()
     console.log('[Signup] Received data:', JSON.stringify(body, null, 2))
 
@@ -166,6 +169,9 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('[Signup] Unexpected error:', error)
+    console.error('[Signup] Error stack:', error?.stack)
+    console.error('[Signup] Error name:', error?.name)
+    console.error('[Signup] Error message:', error?.message)
 
     if (error.errors) {
       // Zod validation error
@@ -181,7 +187,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      {
+        error: error.message || 'Internal server error',
+        errorType: error?.name,
+        details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     )
   }
