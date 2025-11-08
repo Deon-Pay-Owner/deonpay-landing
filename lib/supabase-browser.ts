@@ -72,6 +72,7 @@ export type Database = {
 }
 
 // Client-side Supabase client for use in Client Components
+// Uses default cookie storage which works with httpOnly cookies from server
 export function createBrowserClient() {
   return createSupabaseBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -79,46 +80,55 @@ export function createBrowserClient() {
     {
       cookies: {
         get(name: string) {
-          // Read cookie from document.cookie
-          const cookies = document.cookie.split(';')
-          for (const cookie of cookies) {
-            const [key, value] = cookie.trim().split('=')
-            if (key === name) {
-              return decodeURIComponent(value)
+          // Try to read from document.cookie (works for non-httpOnly cookies)
+          if (typeof document !== 'undefined') {
+            const cookies = document.cookie.split(';')
+            for (const cookie of cookies) {
+              const [key, value] = cookie.trim().split('=')
+              if (key === name) {
+                return decodeURIComponent(value)
+              }
             }
           }
           return null
         },
         set(name: string, value: string, options: any) {
-          // Set cookie with domain sharing
-          let cookieString = `${name}=${encodeURIComponent(value)}`
+          // Set cookie accessible from browser (without httpOnly)
+          if (typeof document !== 'undefined') {
+            let cookieString = `${name}=${encodeURIComponent(value)}`
 
-          if (options?.maxAge) {
-            cookieString += `; max-age=${options.maxAge}`
-          }
-          if (options?.path) {
-            cookieString += `; path=${options.path}`
-          } else {
-            cookieString += '; path=/'
-          }
+            if (options?.maxAge) {
+              cookieString += `; max-age=${options.maxAge}`
+            }
+            if (options?.path) {
+              cookieString += `; path=${options.path}`
+            } else {
+              cookieString += '; path=/'
+            }
 
-          // Share cookies across subdomains
-          cookieString += '; domain=.deonpay.mx'
+            // Share cookies across subdomains
+            cookieString += '; domain=.deonpay.mx'
 
-          if (options?.sameSite) {
-            cookieString += `; samesite=${options.sameSite}`
-          }
-          if (options?.secure !== false) {
-            cookieString += '; secure'
-          }
+            if (options?.sameSite) {
+              cookieString += `; samesite=${options.sameSite}`
+            } else {
+              cookieString += '; samesite=lax'
+            }
 
-          document.cookie = cookieString
+            if (options?.secure !== false) {
+              cookieString += '; secure'
+            }
+
+            document.cookie = cookieString
+          }
         },
         remove(name: string, options: any) {
           // Remove cookie by setting expired date
-          let cookieString = `${name}=; max-age=0; path=/`
-          cookieString += '; domain=.deonpay.mx'
-          document.cookie = cookieString
+          if (typeof document !== 'undefined') {
+            let cookieString = `${name}=; max-age=0; path=/`
+            cookieString += '; domain=.deonpay.mx'
+            document.cookie = cookieString
+          }
         },
       },
     }
