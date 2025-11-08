@@ -1,5 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createBrowserClient as createSupabaseBrowserClient } from '@supabase/ssr'
 
 export type Database = {
   public: {
@@ -72,37 +71,10 @@ export type Database = {
   }
 }
 
-export async function createClient() {
-  const cookieStore = await cookies()
-
-  return createServerClient<Database>(
+// Client-side Supabase client for use in Client Components
+export function createBrowserClient() {
+  return createSupabaseBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, {
-                ...options,
-                domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
-                secure: true,
-                httpOnly: true,
-                sameSite: 'lax',
-              })
-            })
-          } catch (error) {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
-          }
-        },
-      },
-    }
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
-
-export type SupabaseClient = ReturnType<typeof createClient>

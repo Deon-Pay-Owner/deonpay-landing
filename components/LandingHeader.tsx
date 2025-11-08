@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from './Button'
 import { CreditCard, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
-import { createBrowserClient } from '@/lib/supabase'
+import { createBrowserClient } from '@/lib/supabase-browser'
 
 export default function LandingHeader() {
   const { theme, toggleTheme } = useTheme()
