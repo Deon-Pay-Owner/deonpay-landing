@@ -127,9 +127,10 @@ export async function POST(request: NextRequest) {
           code: merchantError.code,
         })
 
-        // If user was created but merchant failed, try to clean up
-        await supabase.auth.admin.deleteUser(userId).catch(err =>
-          console.error('[Signup] Failed to cleanup user after merchant error:', err)
+        // If user was created but merchant failed, try to clean up (best effort)
+        supabase.auth.admin.deleteUser(userId).then(
+          () => console.log('[Signup] Cleaned up user after merchant error'),
+          (err) => console.error('[Signup] Failed to cleanup user after merchant error:', err)
         )
 
         return NextResponse.json(
@@ -178,12 +179,14 @@ export async function POST(request: NextRequest) {
         code: profileError.code,
       })
 
-      // Try to cleanup merchant and user
-      await supabase.from('merchants').delete().eq('id', merchant.id).catch(err =>
-        console.error('[Signup] Failed to cleanup merchant after profile error:', err)
+      // Try to cleanup merchant and user (best effort, don't await)
+      supabase.from('merchants').delete().eq('id', merchant.id).then(
+        () => console.log('[Signup] Cleaned up merchant after profile error'),
+        (err) => console.error('[Signup] Failed to cleanup merchant after profile error:', err)
       )
-      await supabase.auth.admin.deleteUser(userId).catch(err =>
-        console.error('[Signup] Failed to cleanup user after profile error:', err)
+      supabase.auth.admin.deleteUser(userId).then(
+        () => console.log('[Signup] Cleaned up user after profile error'),
+        (err) => console.error('[Signup] Failed to cleanup user after profile error:', err)
       )
 
       return NextResponse.json(
