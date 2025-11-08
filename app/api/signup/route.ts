@@ -87,6 +87,15 @@ export async function POST(request: NextRequest) {
     console.log('[Signup] Merchant created:', merchant.id)
 
     // 3. Create user profile
+    console.log('[Signup] Creating profile for user:', userId)
+    console.log('[Signup] Profile data:', {
+      user_id: userId,
+      full_name: validatedData.full_name,
+      phone: validatedData.phone,
+      profile_type: validatedData.profile_type,
+      default_merchant_id: merchant.id,
+    })
+
     const { error: profileError } = await supabase
       .from('users_profile')
       .insert({
@@ -98,12 +107,22 @@ export async function POST(request: NextRequest) {
       })
 
     if (profileError) {
-      console.error('[Signup] Profile creation error:', profileError)
+      console.error('[Signup] Profile creation error:', {
+        message: profileError.message,
+        details: profileError.details,
+        hint: profileError.hint,
+        code: profileError.code,
+      })
       return NextResponse.json(
-        { error: 'Failed to create profile. Please contact support.' },
+        {
+          error: 'Failed to create profile. Please contact support.',
+          debug: `${profileError.message} (${profileError.code})`
+        },
         { status: 500 }
       )
     }
+
+    console.log('[Signup] Profile created successfully')
 
     // 4. Create merchant member relationship
     const { error: memberError } = await supabase
