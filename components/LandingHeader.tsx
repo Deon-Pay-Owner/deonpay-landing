@@ -50,6 +50,7 @@ export default function LandingHeader() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setLoading(true)
       if (session?.user) {
         setIsLoggedIn(true)
         // Fetch merchant ID when session changes
@@ -62,10 +63,15 @@ export default function LandingHeader() {
             if (profile?.default_merchant_id) {
               setMerchantId(profile.default_merchant_id)
             }
+            setLoading(false)
+          })
+          .catch(() => {
+            setLoading(false)
           })
       } else {
         setIsLoggedIn(false)
         setMerchantId(null)
+        setLoading(false)
       }
     })
 
