@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import { signUpSchema, type SignUpFormData, PROFILE_TYPE_LABELS, type ProfileType } from '@/lib/schemas/signup'
+import PhoneInput from '@/components/PhoneInput'
 
 export default function SignUpPage() {
   // Form state
@@ -239,18 +240,13 @@ export default function SignUpPage() {
 
               {/* Phone */}
               <div>
-                <label htmlFor="phone" className="label-field">
+                <label className="label-field">
                   Teléfono o WhatsApp
                 </label>
-                <input
-                  id="phone"
-                  type="tel"
+                <PhoneInput
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="input-field"
-                  placeholder="+52 555 123 4567"
-                  required
-                  disabled={loading}
+                  onChange={setPhone}
+                  defaultCountry="MX"
                 />
               </div>
 

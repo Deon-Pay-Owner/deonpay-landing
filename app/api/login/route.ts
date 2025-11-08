@@ -127,6 +127,35 @@ export async function POST(request: NextRequest) {
     // Reset rate limit on successful login
     loginAttempts.delete(data.email)
 
+    // Log session
+    try {
+      const userAgent = request.headers.get('user-agent') || ''
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
+                 request.headers.get('x-real-ip') ||
+                 'unknown'
+
+      // Parse user agent for device info
+      const deviceType = /mobile/i.test(userAgent) ? 'mobile' :
+                        /tablet/i.test(userAgent) ? 'tablet' : 'desktop'
+
+      const browser = userAgent.match(/(Chrome|Firefox|Safari|Edge|Opera)\/[\d.]+/)?.[0] || 'unknown'
+      const os = userAgent.match(/(Windows|Mac|Linux|Android|iOS)/)?.[0] || 'unknown'
+
+      await supabase.from('session_logs').insert({
+        user_id: userId,
+        login_at: new Date().toISOString(),
+        ip_address: ip,
+        user_agent: userAgent,
+        device_type: deviceType,
+        browser,
+        os,
+        is_active: true,
+      })
+    } catch (sessionError) {
+      // Don't fail login if session logging fails
+      console.error('Session logging error:', sessionError)
+    }
+
     // Return success with redirect URL
     return NextResponse.json({
       ok: true,
