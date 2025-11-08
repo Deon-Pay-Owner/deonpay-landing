@@ -49,25 +49,26 @@ export default function LandingHeader() {
     checkSession()
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setLoading(true)
       if (session?.user) {
         setIsLoggedIn(true)
         // Fetch merchant ID when session changes
-        supabase
-          .from('users_profile')
-          .select('default_merchant_id')
-          .eq('user_id', session.user.id)
-          .single()
-          .then(({ data: profile }) => {
-            if (profile?.default_merchant_id) {
-              setMerchantId(profile.default_merchant_id)
-            }
-            setLoading(false)
-          })
-          .catch(() => {
-            setLoading(false)
-          })
+        try {
+          const { data: profile } = await supabase
+            .from('users_profile')
+            .select('default_merchant_id')
+            .eq('user_id', session.user.id)
+            .single()
+
+          if (profile?.default_merchant_id) {
+            setMerchantId(profile.default_merchant_id)
+          }
+        } catch (error) {
+          // Handle error silently
+        } finally {
+          setLoading(false)
+        }
       } else {
         setIsLoggedIn(false)
         setMerchantId(null)
