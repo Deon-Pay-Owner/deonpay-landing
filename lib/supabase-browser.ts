@@ -83,10 +83,14 @@ export function createBrowserClient() {
           // Try to read from document.cookie (works for non-httpOnly cookies)
           if (typeof document !== 'undefined') {
             const cookies = document.cookie.split(';')
+            console.log(`[Supabase Browser] Looking for cookie: ${name}`)
+            console.log(`[Supabase Browser] Available cookies:`, cookies)
+
             // First try to read the client-accessible version
             for (const cookie of cookies) {
               const [key, value] = cookie.trim().split('=')
               if (key === `${name}-client`) {
+                console.log(`[Supabase Browser] Found ${name}-client cookie`)
                 return decodeURIComponent(value)
               }
             }
@@ -94,9 +98,11 @@ export function createBrowserClient() {
             for (const cookie of cookies) {
               const [key, value] = cookie.trim().split('=')
               if (key === name) {
+                console.log(`[Supabase Browser] Found ${name} cookie`)
                 return decodeURIComponent(value)
               }
             }
+            console.log(`[Supabase Browser] Cookie ${name} not found`)
           }
           return null
         },
