@@ -1,25 +1,60 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from './Button'
 import { CreditCard, Moon, Sun } from 'lucide-react'
 import { useTheme } from '@/contexts/ThemeContext'
+import { createClient } from '@/lib/supabase'
 
 export default function LandingHeader() {
   const { theme, toggleTheme } = useTheme()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [merchantId, setMerchantId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+
+        if (user) {
+          setIsLoggedIn(true)
+
+          // Get merchant ID
+          const { data: profile } = await supabase
+            .from('users_profile')
+            .select('default_merchant_id')
+            .eq('user_id', user.id)
+            .single()
+
+          if (profile?.default_merchant_id) {
+            setMerchantId(profile.default_merchant_id)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkSession()
+  }, [])
 
   return (
-    <header className="border-b border-[var(--color-border)] bg-[var(--color-background)]/80 backdrop-blur-sm sticky top-0 z-50">
+    <header className="border-b border-[var(--color-border)] bg-[var(--color-background)]/95 md:bg-[var(--color-background)]/80 backdrop-blur-md sticky top-0 z-50 will-change-transform">
       <div className="container mx-auto px-6 py-4 max-w-7xl">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-[var(--color-primary)] rounded-xl flex items-center justify-center">
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-10 h-10 bg-[var(--color-primary)] rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
               <CreditCard className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold text-[var(--color-textPrimary)] font-[family-name:var(--font-poppins)]">
               DeonPay
             </span>
-          </div>
+          </Link>
           <div className="flex items-center gap-3 sm:gap-4">
             {/* Theme Toggle */}
             <button
@@ -35,12 +70,24 @@ export default function LandingHeader() {
               )}
             </button>
 
-            <Link href="/signin" className="hidden sm:block">
-              <Button variant="ghost">Iniciar Sesión</Button>
-            </Link>
-            <Link href="/signup">
-              <Button variant="primary">Comenzar</Button>
-            </Link>
+            {!loading && (
+              <>
+                {isLoggedIn && merchantId ? (
+                  <Link href={`https://dashboard.deonpay.mx/${merchantId}`}>
+                    <Button variant="primary">Ir a Dashboard</Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/signin" className="hidden sm:block">
+                      <Button variant="ghost">Iniciar Sesión</Button>
+                    </Link>
+                    <Link href="/signup">
+                      <Button variant="primary">Comenzar</Button>
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

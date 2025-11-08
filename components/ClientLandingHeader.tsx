@@ -13,7 +13,7 @@ export default function ClientLandingHeader() {
   // Don't render anything on the server
   if (!mounted) {
     return (
-      <header className="border-b border-[var(--color-border)] bg-[var(--color-background)]/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-[var(--color-border)] bg-[var(--color-background)]/95 md:bg-[var(--color-background)]/80 backdrop-blur-md sticky top-0 z-50 will-change-transform">
         <div className="container mx-auto px-6 py-4 max-w-7xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
