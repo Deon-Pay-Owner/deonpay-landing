@@ -16,6 +16,11 @@ export default function LandingHeader() {
   useEffect(() => {
     const supabase = createBrowserClient()
 
+    // Safety timeout to ensure loading doesn't get stuck
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false)
+    }, 3000) // 3 seconds max
+
     async function checkSession() {
       try {
         // Use getSession to check for active session with shared cookies
@@ -39,9 +44,11 @@ export default function LandingHeader() {
           setMerchantId(null)
         }
       } catch (error) {
+        console.error('Session check error:', error)
         setIsLoggedIn(false)
         setMerchantId(null)
       } finally {
+        clearTimeout(safetyTimeout)
         setLoading(false)
       }
     }
@@ -77,6 +84,7 @@ export default function LandingHeader() {
     })
 
     return () => {
+      clearTimeout(safetyTimeout)
       subscription.unsubscribe()
     }
   }, [])
@@ -108,7 +116,12 @@ export default function LandingHeader() {
               )}
             </button>
 
-            {!loading && (
+            {loading ? (
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-20 sm:w-24 h-8 sm:h-10 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg animate-pulse"></div>
+                <div className="w-20 sm:w-24 h-8 sm:h-10 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg animate-pulse"></div>
+              </div>
+            ) : (
               <>
                 {isLoggedIn && merchantId ? (
                   <Link href={`https://dashboard.deonpay.mx/${merchantId}`}>
