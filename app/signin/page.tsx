@@ -147,6 +147,15 @@ export default function SignInPage() {
               </button>
             </form>
 
+            <div className="mt-4 text-center">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+              >
+                ¿Olvidaste tu contraseña?
+              </Link>
+            </div>
+
             <div className="mt-6 text-center">
               <p className="text-gray-600 dark:text-gray-400">
                 ¿No tienes cuenta?{' '}

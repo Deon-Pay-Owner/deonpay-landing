@@ -54,9 +54,31 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError || !authData.user) {
+      // Check if error is due to unverified email
+      if (authError?.message?.includes('Email not confirmed')) {
+        return NextResponse.json(
+          {
+            error: 'Tu correo electrónico aún no ha sido verificado. Por favor revisa tu bandeja de entrada y verifica tu correo antes de iniciar sesión.',
+            errorType: 'email_not_verified'
+          },
+          { status: 403 }
+        )
+      }
+
       return NextResponse.json(
         { error: 'Credenciales inválidas' },
         { status: 401 }
+      )
+    }
+
+    // Additional check for email confirmation
+    if (!authData.user.email_confirmed_at) {
+      return NextResponse.json(
+        {
+          error: 'Tu correo electrónico aún no ha sido verificado. Por favor revisa tu bandeja de entrada y verifica tu correo antes de iniciar sesión.',
+          errorType: 'email_not_verified'
+        },
+        { status: 403 }
       )
     }
 
