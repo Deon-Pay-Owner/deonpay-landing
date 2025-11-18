@@ -44,6 +44,10 @@ export default function SignInPage() {
       }
 
       if (result.ok && result.redirectTo) {
+        // Debug: Log cookies before redirect
+        console.log('Cookies before redirect:', document.cookie)
+        console.log('Redirecting to:', result.redirectTo)
+
         // Redirect to dashboard
         window.location.href = result.redirectTo
       }
