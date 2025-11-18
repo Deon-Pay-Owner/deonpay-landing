@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Supabase client with custom cookie handling
+    // Create Supabase client - this will handle cookies automatically
     const supabase = await createClient()
 
     // Sign in with password
@@ -188,30 +188,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Return success with redirect URL to merchant dashboard
-    // Set cookies explicitly in the response
-    const response = NextResponse.json({
+    // The Supabase createClient already handles setting cookies via the setAll method in lib/supabase.ts
+    // We just need to return the response - cookies are already set with proper domain
+    return NextResponse.json({
       ok: true,
       redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
     })
-
-    // Set access token cookie
-    response.cookies.set(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL!.split('//')[1].split('.')[0]}-auth-token`, JSON.stringify({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_in: session.expires_in,
-      expires_at: session.expires_at,
-      token_type: session.token_type,
-      user: authData.user
-    }), {
-      domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
-      path: '/',
-      secure: true,
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    })
-
-    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

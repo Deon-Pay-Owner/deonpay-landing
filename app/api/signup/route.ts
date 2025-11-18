@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { signUpSchema } from '@/lib/schemas/signup'
 import { generateMerchantKeys } from '@/lib/api-keys'
 
@@ -17,6 +18,8 @@ export async function POST(request: NextRequest) {
 
     // Create Supabase client
     const supabase = await createClient()
+    // Create admin client for cleanup operations
+    const adminClient = createAdminClient()
 
     // 1. Sign up user with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -129,7 +132,7 @@ export async function POST(request: NextRequest) {
         })
 
         // If user was created but merchant failed, try to clean up (best effort)
-        supabase.auth.admin.deleteUser(userId).then(
+        adminClient.auth.admin.deleteUser(userId).then(
           () => console.log('[Signup] Cleaned up user after merchant error'),
           (err) => console.error('[Signup] Failed to cleanup user after merchant error:', err)
         )
@@ -176,7 +179,7 @@ export async function POST(request: NextRequest) {
           () => console.log('[Signup] Cleaned up merchant after API keys error'),
           (err) => console.error('[Signup] Failed to cleanup merchant after API keys error:', err)
         )
-        supabase.auth.admin.deleteUser(userId).then(
+        adminClient.auth.admin.deleteUser(userId).then(
           () => console.log('[Signup] Cleaned up user after API keys error'),
           (err) => console.error('[Signup] Failed to cleanup user after API keys error:', err)
         )
@@ -231,7 +234,7 @@ export async function POST(request: NextRequest) {
         () => console.log('[Signup] Cleaned up merchant after profile error'),
         (err) => console.error('[Signup] Failed to cleanup merchant after profile error:', err)
       )
-      supabase.auth.admin.deleteUser(userId).then(
+      adminClient.auth.admin.deleteUser(userId).then(
         () => console.log('[Signup] Cleaned up user after profile error'),
         (err) => console.error('[Signup] Failed to cleanup user after profile error:', err)
       )
