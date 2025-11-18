@@ -28,8 +28,6 @@ function checkRateLimit(email: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  let response = NextResponse.next()
-
   try {
     const body = await request.json()
 
@@ -82,36 +80,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Extract auth session and set cookies manually
-    if (authData.session) {
-      const { access_token, refresh_token } = authData.session
-      const cookieDomain = process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx'
-
-      // Set httpOnly cookies for server
-      response = NextResponse.json({
-        ok: true,
-        redirectTo: `https://dashboard.deonpay.mx/${authData.user.id}`,
-      })
-
-      response.cookies.set('sb-exhjlvaocapbtgvqxnhr-auth-token', JSON.stringify(authData.session), {
-        domain: cookieDomain,
-        path: '/',
-        secure: true,
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      })
-
-      // Set client-accessible cookie for browser
-      response.cookies.set('sb-exhjlvaocapbtgvqxnhr-auth-token-client', JSON.stringify(authData.session), {
-        domain: cookieDomain,
-        path: '/',
-        secure: true,
-        httpOnly: false, // Client can read
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      })
-    }
+    // Supabase client automatically handles cookie setting via createClient's setAll callback
+    // No need to manually set cookies here
 
     const userId = authData.user.id
 
@@ -211,39 +181,11 @@ export async function POST(request: NextRequest) {
       console.error('Session logging error:', sessionError)
     }
 
-    // Update response with correct merchant ID if needed
-    if (response) {
-      response = NextResponse.json({
-        ok: true,
-        redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
-      })
-
-      // Re-set cookies on new response
-      if (authData.session) {
-        const cookieDomain = process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx'
-
-        response.cookies.set('sb-exhjlvaocapbtgvqxnhr-auth-token', JSON.stringify(authData.session), {
-          domain: cookieDomain,
-          path: '/',
-          secure: true,
-          httpOnly: true,
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-        })
-
-        response.cookies.set('sb-exhjlvaocapbtgvqxnhr-auth-token-client', JSON.stringify(authData.session), {
-          domain: cookieDomain,
-          path: '/',
-          secure: true,
-          httpOnly: false,
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7, // 7 days
-        })
-      }
-    }
-
-    // Return success with redirect URL
-    return response
+    // Return success with redirect URL to merchant dashboard
+    return NextResponse.json({
+      ok: true,
+      redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
