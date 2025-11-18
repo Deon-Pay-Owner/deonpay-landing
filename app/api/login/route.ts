@@ -80,10 +80,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Supabase client automatically handles cookie setting via createClient's setAll callback
-    // No need to manually set cookies here
-
     const userId = authData.user.id
+
+    // Get session cookies from Supabase
+    const session = authData.session
+    if (!session) {
+      return NextResponse.json(
+        { error: 'No se pudo crear la sesión' },
+        { status: 500 }
+      )
+    }
 
     // Check if user has a profile
     const { data: profile, error: profileError } = await supabase
@@ -182,10 +188,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Return success with redirect URL to merchant dashboard
-    return NextResponse.json({
+    // Set cookies explicitly in the response
+    const response = NextResponse.json({
       ok: true,
       redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
     })
+
+    // Set access token cookie
+    response.cookies.set(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL!.split('//')[1].split('.')[0]}-auth-token`, JSON.stringify({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_in: session.expires_in,
+      expires_at: session.expires_at,
+      token_type: session.token_type,
+      user: authData.user
+    }), {
+      domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
+      path: '/',
+      secure: true,
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    })
+
+    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
