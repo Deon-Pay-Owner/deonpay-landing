@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { NextRequest, NextResponse } from 'next/server'
 
 export type Database = {
   public: {
@@ -99,6 +100,41 @@ export async function createClient() {
             // This can be ignored if you have middleware refreshing
             // user sessions.
           }
+        },
+      },
+    }
+  )
+}
+
+/**
+ * Create a Supabase client for API routes that properly sets cookies on the NextResponse
+ * This is required because cookies() from next/headers doesn't work in API routes
+ */
+export function createApiClient(request: NextRequest, response: NextResponse) {
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const cookieOptions = {
+              ...options,
+              domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
+              secure: true,
+              httpOnly: true,
+              sameSite: 'lax' as const,
+            }
+
+            // Set cookie on the request (for reading in this request)
+            request.cookies.set(name, value)
+
+            // Set cookie on the response (for sending to client)
+            response.cookies.set(name, value, cookieOptions)
+          })
         },
       },
     }

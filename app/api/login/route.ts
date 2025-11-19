@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createApiClient } from '@/lib/supabase'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -28,6 +28,9 @@ function checkRateLimit(email: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  // Create a response object early that we'll use for setting cookies
+  let response = new NextResponse()
+
   try {
     const body = await request.json()
 
@@ -42,8 +45,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Supabase client - this will handle cookies automatically
-    const supabase = await createClient()
+    // Create Supabase client for API route - this will properly set cookies on the response
+    const supabase = createApiClient(request, response)
 
     // Sign in with password
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
@@ -187,13 +190,18 @@ export async function POST(request: NextRequest) {
       console.error('Session logging error:', sessionError)
     }
 
-    // Return success with redirect URL to merchant dashboard
-    // The Supabase createClient already handles setting cookies via the setAll method in lib/supabase.ts
-    // We just need to return the response - cookies are already set with proper domain
-    return NextResponse.json({
-      ok: true,
-      redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
-    })
+    // Update response body with redirect URL
+    // Cookies have already been set on the response by createApiClient
+    return NextResponse.json(
+      {
+        ok: true,
+        redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
+      },
+      {
+        status: 200,
+        headers: response.headers,
+      }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
