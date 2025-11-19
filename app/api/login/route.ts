@@ -190,18 +190,29 @@ export async function POST(request: NextRequest) {
       console.error('Session logging error:', sessionError)
     }
 
-    // Update response body with redirect URL
-    // Cookies have already been set on the response by createApiClient
-    return NextResponse.json(
+    // Return the response with cookies already set by createApiClient
+    // We need to return the SAME response object that has the cookies
+    const successResponse = NextResponse.json(
       {
         ok: true,
         redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
       },
-      {
-        status: 200,
-        headers: response.headers,
-      }
+      { status: 200 }
     )
+
+    // Copy all cookies from the original response to the success response
+    response.cookies.getAll().forEach(cookie => {
+      successResponse.cookies.set(cookie.name, cookie.value, {
+        domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
+        secure: true,
+        httpOnly: true,
+        sameSite: 'lax',
+        path: cookie.path,
+        maxAge: cookie.maxAge,
+      })
+    })
+
+    return successResponse
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
