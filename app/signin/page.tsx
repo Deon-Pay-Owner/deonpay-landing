@@ -21,12 +21,15 @@ export default function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Form submitted - starting login process')
     setError('')
     setLoading(true)
 
     try {
       // Validate inputs
+      console.log('Validating inputs...')
       const data = signInSchema.parse({ email, password })
+      console.log('Validation passed, making API call to /api/login')
 
       // Call login API
       const response = await fetch('/api/login', {
@@ -37,14 +40,18 @@ export default function SignInPage() {
         body: JSON.stringify(data),
       })
 
+      console.log('API response received:', response.status, response.statusText)
       const result = await response.json()
+      console.log('API result:', result)
 
       if (!response.ok) {
+        console.error('Login failed:', result.error)
         throw new Error(result.error || 'Error al iniciar sesión')
       }
 
       if (result.ok && result.redirectTo) {
         // Debug: Log cookies before redirect
+        console.log('Login successful!')
         console.log('Cookies before redirect:', document.cookie)
         console.log('Redirecting to:', result.redirectTo)
 
@@ -52,15 +59,20 @@ export default function SignInPage() {
         window.location.href = result.redirectTo
       }
     } catch (err) {
+      console.error('Login error caught:', err)
       if (err instanceof z.ZodError) {
+        console.error('Validation error:', err.errors)
         setError(err.errors[0].message)
       } else if (err instanceof Error) {
+        console.error('Error message:', err.message)
         setError(err.message)
       } else {
+        console.error('Unknown error:', err)
         setError('Error al iniciar sesión')
       }
     } finally {
       setLoading(false)
+      console.log('Login process completed')
     }
   }
 
