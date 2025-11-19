@@ -190,34 +190,30 @@ export async function POST(request: NextRequest) {
       console.error('Session logging error:', sessionError)
     }
 
-    // Create the final response with the JSON body
-    // IMPORTANT: We must create a new Response with JSON body but copy all cookies from the response object
-    const finalResponse = new NextResponse(
-      JSON.stringify({
-        ok: true,
-        redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    )
-
-    // Copy ALL cookies from the response object (which has Supabase auth cookies) to the final response
+    // IMPORTANT: Return the SAME response object that has cookies, just update its body
+    // Don't create a new response - that loses the cookies!
     const allCookies = response.cookies.getAll()
     console.log('[LOGIN DEBUG] Cookies from response:', allCookies.length, allCookies.map(c => c.name))
 
+    // Create response using NextResponse.json which properly handles cookies
+    const finalResponse = NextResponse.json(
+      {
+        ok: true,
+        redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
+      },
+      { status: 200 }
+    )
+
+    // Copy cookies from the Supabase response
     allCookies.forEach(cookie => {
-      console.log('[LOGIN DEBUG] Setting cookie:', cookie.name, 'httpOnly:', cookie.httpOnly, 'path:', cookie.path)
+      console.log('[LOGIN DEBUG] Copying cookie to final response:', cookie.name)
       finalResponse.cookies.set(cookie.name, cookie.value, {
         domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
         secure: true,
         httpOnly: true,
         sameSite: 'lax',
-        path: cookie.path || '/',
-        maxAge: cookie.maxAge,
+        path: '/',
+        maxAge: cookie.maxAge || 3600,
       })
     })
 
