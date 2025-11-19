@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createApiClient } from '@/lib/supabase'
 import { z } from 'zod'
 
 const resetPasswordSchema = z.object({
@@ -9,14 +9,17 @@ const resetPasswordSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  // Create a response object early that we'll use for setting cookies
+  let response = new NextResponse()
+
   try {
     const body = await request.json()
 
     // Validate input
     const data = resetPasswordSchema.parse(body)
 
-    // Create Supabase client
-    const supabase = await createClient()
+    // Create Supabase client for API route - this will properly set cookies on the response
+    const supabase = createApiClient(request, response)
 
     // Set session with the access token from the recovery link
     const { error: sessionError } = await supabase.auth.setSession({

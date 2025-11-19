@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase'
+import { createApiClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { signUpSchema } from '@/lib/schemas/signup'
 import { generateMerchantKeys } from '@/lib/api-keys'
 
 export async function POST(request: NextRequest) {
+  // Create a response object early that we'll use for setting cookies
+  let response = new NextResponse()
+
   console.log('[Signup] API Route called')
 
   try {
@@ -16,8 +19,8 @@ export async function POST(request: NextRequest) {
     const validatedData = signUpSchema.parse(body)
     console.log('[Signup] Validation passed')
 
-    // Create Supabase client
-    const supabase = await createClient()
+    // Create Supabase client for API route - this will properly set cookies on the response
+    const supabase = createApiClient(request, response)
     // Create admin client for cleanup operations
     const adminClient = createAdminClient()
 
@@ -71,18 +74,24 @@ export async function POST(request: NextRequest) {
 
       // User already has everything set up, just return their data
       if (authData.session) {
-        return NextResponse.json({
-          ok: true,
-          redirectTo: `${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.deonpay.mx'}/${existingProfile.default_merchant_id}`,
-          user: {
-            id: userId,
-            email: validatedData.email,
+        return NextResponse.json(
+          {
+            ok: true,
+            redirectTo: `${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.deonpay.mx'}/${existingProfile.default_merchant_id}`,
+            user: {
+              id: userId,
+              email: validatedData.email,
+            },
+            merchant: {
+              id: existingProfile.default_merchant_id,
+              name: existingProfile.merchants.name,
+            },
           },
-          merchant: {
-            id: existingProfile.default_merchant_id,
-            name: existingProfile.merchants.name,
-          },
-        }, { status: 200 })
+          {
+            status: 200,
+            headers: response.headers,
+          }
+        )
       } else {
         return NextResponse.json({
           ok: true,
@@ -288,18 +297,25 @@ export async function POST(request: NextRequest) {
     // 5. Check if email confirmation is required
     if (authData.session) {
       // User is already logged in (email confirmation disabled)
-      return NextResponse.json({
-        ok: true,
-        redirectTo: `${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.deonpay.mx'}/${merchant.id}`,
-        user: {
-          id: userId,
-          email: validatedData.email,
+      // Cookies have already been set on the response by createApiClient
+      return NextResponse.json(
+        {
+          ok: true,
+          redirectTo: `${process.env.NEXT_PUBLIC_DASHBOARD_URL || 'https://dashboard.deonpay.mx'}/${merchant.id}`,
+          user: {
+            id: userId,
+            email: validatedData.email,
+          },
+          merchant: {
+            id: merchant.id,
+            name: merchant.name,
+          },
         },
-        merchant: {
-          id: merchant.id,
-          name: merchant.name,
-        },
-      }, { status: 201 })
+        {
+          status: 201,
+          headers: response.headers,
+        }
+      )
     } else {
       // Email confirmation required
       return NextResponse.json({
