@@ -207,7 +207,10 @@ export async function POST(request: NextRequest) {
 
     // Copy ALL cookies from the response object (which has Supabase auth cookies) to the final response
     const allCookies = response.cookies.getAll()
+    console.log('[LOGIN DEBUG] Cookies from response:', allCookies.length, allCookies.map(c => c.name))
+
     allCookies.forEach(cookie => {
+      console.log('[LOGIN DEBUG] Setting cookie:', cookie.name, 'httpOnly:', cookie.httpOnly, 'path:', cookie.path)
       finalResponse.cookies.set(cookie.name, cookie.value, {
         domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
         secure: true,
@@ -217,6 +220,9 @@ export async function POST(request: NextRequest) {
         maxAge: cookie.maxAge,
       })
     })
+
+    const finalCookies = finalResponse.cookies.getAll()
+    console.log('[LOGIN DEBUG] Final response cookies:', finalCookies.length, finalCookies.map(c => c.name))
 
     return finalResponse
   } catch (error) {
