@@ -28,9 +28,6 @@ function checkRateLimit(email: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
-  // Create a response object early that we'll use for setting cookies
-  let response = new NextResponse()
-
   try {
     const body = await request.json()
 
@@ -45,7 +42,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Supabase client for API route - this will properly set cookies on the response
+    // Create a mutable response object that Supabase will set cookies on
+    const response = new NextResponse()
+
+    // Create Supabase client for API route - this will set cookies on the response object
     const supabase = createApiClient(request, response)
 
     // Sign in with password
@@ -190,29 +190,35 @@ export async function POST(request: NextRequest) {
       console.error('Session logging error:', sessionError)
     }
 
-    // Return the response with cookies already set by createApiClient
-    // We need to return the SAME response object that has the cookies
-    const successResponse = NextResponse.json(
-      {
+    // Create the final response with the JSON body
+    // IMPORTANT: We must create a new Response with JSON body but copy all cookies from the response object
+    const finalResponse = new NextResponse(
+      JSON.stringify({
         ok: true,
         redirectTo: `https://dashboard.deonpay.mx/${merchantId}`,
-      },
-      { status: 200 }
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     )
 
-    // Copy all cookies from the original response to the success response
-    response.cookies.getAll().forEach(cookie => {
-      successResponse.cookies.set(cookie.name, cookie.value, {
+    // Copy ALL cookies from the response object (which has Supabase auth cookies) to the final response
+    const allCookies = response.cookies.getAll()
+    allCookies.forEach(cookie => {
+      finalResponse.cookies.set(cookie.name, cookie.value, {
         domain: process.env.SUPABASE_COOKIE_DOMAIN || '.deonpay.mx',
         secure: true,
         httpOnly: true,
         sameSite: 'lax',
-        path: cookie.path,
+        path: cookie.path || '/',
         maxAge: cookie.maxAge,
       })
     })
 
-    return successResponse
+    return finalResponse
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
